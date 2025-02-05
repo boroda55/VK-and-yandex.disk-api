@@ -47,12 +47,14 @@ class Transfer:
 
     def selection(self):
         list_photo_upload = list()
+
         try:
             for i in self.json_VK['response']['items']:
                 data_photo_dict = dict()
                 data_photo_dict['file_name'] = f'{i['likes']['count']}.jpg'
                 max_size_photo = max(i['sizes'], key=lambda x: x['height'])
                 data_photo_dict['url'] = max_size_photo['url']
+                data_photo_dict['size'] = max_size_photo['type']
                 list_photo_upload.append(data_photo_dict)
         except KeyError as err:
             logging.error('KeyError', exc_info=True)
@@ -90,6 +92,8 @@ class YD:
             logging.info(f'HTTP код {response.status_code}')
 
     def upload_file(self):
+        if os.path.exists('upload.json'):
+            os.remove('upload.json')
         for photo_upload in tqdm(self.list_photo_upload):
             url = f'{self.base}/upload'
             params = {
@@ -97,7 +101,11 @@ class YD:
                 'url': photo_upload['url']
             }
             response = requests.post(url, headers=self.headers, params=params)
-        logging.info(f'Фотографии перенесены из ВК на ЯД')
+            del photo_upload['url']
+            with open('upload.json', 'a', encoding='utf-8') as f:
+                json.dump(photo_upload, f, indent=4)
+        logging.info(f'Фотографии перенесены из ВК на ЯД и перезаписан json-файл')
+
 
 
 if os.path.isfile('setting.ini'):
